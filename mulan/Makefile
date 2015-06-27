@@ -9,7 +9,7 @@ oissrnd.m:
 	wget -q http://www.mathworks.com/matlabcentral/fileexchange/1261-poissrnd/content/oissrnd.m
 
 poissrnd.m: oissrnd.m
-	@perl -MHTML::Entities -e '$$l=join "",<>; $$l=~m%<pre class="matlab-code">(.*?)</pre>%s; print decode_entities($$1)' $< > $@
+	@perl -MHTML::Entities -e '$$l=join "",<>; $$l=~m%<pre class="matlab-code">(.*?)</pre>%s; $$s=$$1; $$s=~s/break/return/; print decode_entities($$s)' $< > $@
 
 rebuildmat: bibtex.mat corel5k.mat mediamill.mat yeast.mat
 	make mostlyclean
