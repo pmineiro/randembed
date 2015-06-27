@@ -235,8 +235,27 @@ function r=octavesaferandn(d,f,class)
   end
 end
 
+function r=myrandg(a)
+    d=a-1/3;
+    c=1/sqrt(9*d);
+    while true
+        v=-1;
+        while  v<=0
+            x=randn();
+            v=(1+c*x);
+            v=v.*v.*v;
+        end        
+        u=rand();
+        x2=x*x; x4=x2*x2;
+        if (u<1-0.0331*x4 || log(u)<0.5*x2+d*(1-v+log(v)))
+            r=d*v;
+            return;
+        end
+    end
+end
+
 function [r,b]=randfeats(x,rfac,f,kernel)
-  chi2rnd=@(a,n,p) 2*arrayfun(@(z)randg(z),(a/2)*ones(n,p));
+  chi2rnd=@(a,n,p) 2*arrayfun(@(z)myrandg(z),(a/2)*ones(n,p));
 
   [n,d]=size(x);
   subsz=min(n,1000);

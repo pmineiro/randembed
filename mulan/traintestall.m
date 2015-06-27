@@ -1,5 +1,9 @@
 more off;
 
+if exist('poissrnd') == 0
+  error('*** you are missing poissrnd: try ''make poissrnd.m'' ***')
+end
+
 fprintf('*** bibtex *** \n');
 traintestone('bibtex.mat')
 
