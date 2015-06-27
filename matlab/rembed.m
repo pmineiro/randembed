@@ -123,12 +123,12 @@ function retval = rembed(Xtic, W, Ytic, k, varargin)
        if (meanshift)
          meanX=sparseweightedsum(Xtic,W,1)/sumw;
        end
-      dXX=sparseweightedsum(Xtic,W,2)-sumw*meanX.*meanX;
+       dXX=sparseweightedsum(Xtic,W,2)-sumw*meanX.*meanX;
     else
        if (meanshift)
          meanX=full(sum(bsxfun(@times,Xtic,W),2)')/sumw;
        end
-      dXX=sum(bsxfun(@times,Xtic.*Xtic,W),2)'-sumw*meanX.*meanX;
+       dXX=sum(bsxfun(@times,Xtic.*Xtic,W),2)'-sumw*meanX.*meanX;
     end  
     
     meanY=zeros(1,dy);
@@ -141,7 +141,15 @@ function retval = rembed(Xtic, W, Ytic, k, varargin)
       if (meanshift)
         meanY=full(sum(bsxfun(@times,Ytic,W),2)')/sumw;
       end
-      dYY=sum(bsxfun(@times,Ytic.*Ytic,W),2)'-sumw*meanY.*meanY;
+      if (~exist('OCTAVE_VERSION','builtin'))
+        dYY=sum(bsxfun(@times,Ytic.*Ytic,W),2)'-sumw*meanY.*meanY;
+      else
+        % for some reason, octave runs out of memory with bsxfun here (?)
+        dYY=-sumw*(meanY.*meanY);
+        for ii=1:size(W,2)
+          dYY=dYY+W(1,ii)*(Ytic(:,ii).*Ytic(:,ii))';
+        end
+      end
     end
 
     cx=lambda*sum(dXX)/dx;
@@ -474,9 +482,12 @@ function P = project(Z,Wx,bx,varargin)
 
     if (havedmsm)
       P=dmsm(Wx',Z')';
+    elseif strcmp(class(Wx),'double')
+      P=Z*Wx;
     else
-      P=bsxfun(@minus,P,bx);
+      P=single(Z*double(Wx)); % :(
     end
+    P=bsxfun(@minus,P,bx);
   else
     P=bsxfun(@minus,Z*Wx,bx);
   end

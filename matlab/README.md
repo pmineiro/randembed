@@ -9,7 +9,7 @@ If you are using matlab, you should compile the mex to make everything go faster
  
 and all the mex will be compiled for you.  Adjust NUM_THREADS based upon how much parallelism is appropriate for your setup.  (Sorry, it's not cool enough to auto-detect this).
 
-If you lack a reasonable shell environment, you can execute the mex commands directly from matlab:
+If you lack a reasonable shell environment, you can execute the mex commands directly from matlab, e.g., under Windows:
 
 > &gt;&gt; mex OPTIMFLAGS="&#47;O2" -largeArrayDims -DNUM\_THREADS=2 -lmwblas -lmwlapack sparsequad.cpp  
 > Building with 'Microsoft Visual C++ 2012'.  
@@ -19,13 +19,16 @@ If you lack a reasonable shell environment, you can execute the mex commands dir
 > MEX completed successfully.  
 > &gt;&gt; mex OPTIMFLAGS="&#47;O2" -largeArrayDims -DNUM\_THREADS=2 -lmwblas -lmwlapack sparseweightedsum.cpp  
 > Building with 'Microsoft Visual C++ 2012'.  
-> MEX completed successfully.
+> MEX completed successfully.  
 > &gt;&gt; mex OPTIMFLAGS="&#47;O2" -largeArrayDims -DNUM\_THREADS=2 -lmwblas -lmwlapack chofactor.cpp  
 > Building with 'Microsoft Visual C++ 2012'.  
-> MEX completed successfully.
+> MEX completed successfully.  
 > &gt;&gt; mex OPTIMFLAGS="&#47;O2" -largeArrayDims -DNUM\_THREADS=2 -lmwblas -lmwlapack chosolve.cpp  
 > Building with 'Microsoft Visual C++ 2012'.  
-> MEX completed successfully.
+> MEX completed successfully.  
 > &gt;&gt; mex OPTIMFLAGS="&#47;O2" -largeArrayDims -DNUM\_THREADS=2 -lmwblas -lmwlapack fastexpprob.cpp  
 > Building with 'Microsoft Visual C++ 2012'.  
-> MEX completed successfully.
+> MEX completed successfully.  
+> &gt;&gt; mex OPTIMFLAGS="&#47;O2" -largeArrayDims -DNUM\_THREADS=2 -lmwblas -lmwlapack fastsoftmax.cpp  
+> Building with 'Microsoft Visual C++ 2012'.  
+> MEX completed successfully.  
