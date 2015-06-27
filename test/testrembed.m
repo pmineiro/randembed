@@ -29,7 +29,7 @@ fprintf('performing exact svd ...');
 fprintf(' done\n');
 
 angles=[];
-for ii=1:11
+for ii=1:k
   angles=[angles; subspace(embed.Wy(:,1:ii),Vy(:,1:ii))];
 end
 if max(angles)<0.01
