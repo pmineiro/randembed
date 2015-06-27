@@ -1,5 +1,7 @@
 .SECONDARY:
 
+.PHONY: all rebuildmat
+
 all: 
 	@echo "*** if you lack a poissrnd function, try 'make poissrnd.m' ***" 1>&2
 	@echo "*** otherwise, run traintestall.m from matlab ***" 1>&2

@@ -1,0 +1,26 @@
+#! /usr/bin/env perl
+
+use warnings;
+use strict;
+
+# 796 | 1:4 6:4 7:1 10:1 11:3 12:5 16:1 22:1 27:1 28:1 32:2 38:2 43:1 48:1 64:7 65:5 66:2 69:1 70:5 71:3 74:3 75:4 76:5 80:2 81:1 82:1 85:1 86:5 87:3 90:2 91:6 92:5 95:1 96:4 102:3 103:1 106:1 107:5 108:3 111:1 112:6 123:1 124:1 127:1 128:6 
+
+open (LEFT, '>&=3');
+open (RIGHT, '>&=4');
+
+# zcat aloi_XXX.vw.gz | ./vw2matlab 3>left 4>right 
+
+while (defined ($_ = <>))
+  {
+    chomp;
+    my ($class, $rest) = split /\s+\|\s+/, $_;
+    my @features = split /\s+/, $rest;
+
+    print LEFT "$. $class 1\n";
+
+    foreach my $f (@features)
+      {
+        my ($id, $val) = split /:/, $f;
+        print RIGHT "$. $id $val\n";
+      }
+  }
