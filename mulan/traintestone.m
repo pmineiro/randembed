@@ -282,7 +282,7 @@ end
 
 function [loss,cilb,ciub,microloss,microlb,microub]=multiHammingBoot(th,wr,b,ww,testh,testy,doprint)
   [m,~]=size(testh);
-  imp=mypoissrnd(1,m,16);
+  imp=poissrnd(1,m,16);
   [testloss,testtruepos,testfalsepos,testfalseneg]=...
       multiHammingImpl(th,wr,b,ww,testh,testy,imp);
   
@@ -350,7 +350,7 @@ end
 
 function [microF1,microF1lb,microF1ub,macroF1,macroF1lb,macroF1ub]=multiF1Boot(wr,b,ww,ppos,testh,testy,doprint)
   [m,~]=size(testh);
-  imp=mypoissrnd(1,m,16);
+  imp=poissrnd(1,m,16);
   [testmicroF1,testmacroF1]=multiF1Impl(wr,b,ww,testh,testy,ppos,imp);
   
   [~,ind]=sort(testmicroF1);

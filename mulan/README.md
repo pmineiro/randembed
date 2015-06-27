@@ -1,6 +1,11 @@
 mulan
 ==========
-Reproduce [mulan](http://mulan.sourceforge.net/datasets.html) dataset results from [this paper](http://arxiv.org/abs/1502.02710).  At a matlab prompt:
+Reproduce [mulan](http://mulan.sourceforge.net/datasets.html) dataset results from [this paper](http://arxiv.org/abs/1502.02710).  
+
+If you lack a poissrnd function, you can try 
+> make poissrnd.m
+
+Otherwise, at a matlab prompt:
 > &gt;&gt; traintestall  
 > ... (lots of hyperparameter tuning) ...   
 

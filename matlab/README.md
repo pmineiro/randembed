@@ -20,3 +20,12 @@ If you lack a reasonable shell environment, you can execute the mex commands dir
 > &gt;&gt; mex OPTIMFLAGS="&#47;O2" -largeArrayDims -DNUM\_THREADS=2 -lmwblas -lmwlapack sparseweightedsum.cpp  
 > Building with 'Microsoft Visual C++ 2012'.  
 > MEX completed successfully.
+> &gt;&gt; mex OPTIMFLAGS="&#47;O2" -largeArrayDims -DNUM\_THREADS=2 -lmwblas -lmwlapack chofactor.cpp  
+> Building with 'Microsoft Visual C++ 2012'.  
+> MEX completed successfully.
+> &gt;&gt; mex OPTIMFLAGS="&#47;O2" -largeArrayDims -DNUM\_THREADS=2 -lmwblas -lmwlapack chosolve.cpp  
+> Building with 'Microsoft Visual C++ 2012'.  
+> MEX completed successfully.
+> &gt;&gt; mex OPTIMFLAGS="&#47;O2" -largeArrayDims -DNUM\_THREADS=2 -lmwblas -lmwlapack fastexpprob.cpp  
+> Building with 'Microsoft Visual C++ 2012'.  
+> MEX completed successfully.

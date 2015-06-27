@@ -1,8 +1,15 @@
 .SECONDARY:
 
-all:
-	@echo "*** run traintestall.m from matlab ***" 1>&2
+all: 
+	@echo "*** if you lack a poissrnd function, try 'make poissrnd.m' ***" 1>&2
+	@echo "*** otherwise, run traintestall.m from matlab ***" 1>&2
 	@echo "*** and go get a sandwich ***" 1>&2
+
+oissrnd.m:
+	wget -q http://www.mathworks.com/matlabcentral/fileexchange/1261-poissrnd/content/oissrnd.m
+
+poissrnd.m: oissrnd.m
+	@perl -MHTML::Entities -e '$$l=join "",<>; $$l=~m%<pre class="matlab-code">(.*?)</pre>%s; print decode_entities($$1)' $< > $@
 
 rebuildmat: bibtex.mat corel5k.mat mediamill.mat yeast.mat
 	make mostlyclean
