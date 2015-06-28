@@ -15,6 +15,8 @@ If you wish to reproduce and/or modify the conversion of raw data into matlab fo
 > make rebuildmat   
 > ... (lots of downloading, munging, and potential for error) ...
 
+You really need matlab to rebuild the data files.  Octave and txt2mat do not get along.
+
 Notice
 ----------
 txt2mat is from [matlab central](http://www.mathworks.com/matlabcentral/fileexchange/18430-txt2mat) and is covered by the (BSD) license file [txt2mat.license](txt2mat.license).

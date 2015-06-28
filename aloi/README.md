@@ -11,7 +11,7 @@ If you want to regenerate (or change) the matlab input data, you can try
 > make rebuildmat  
 > ... (builds matlab input files) ...  
  
-but you will need matlab (not octave) to make that work.
+but you will need matlab (not octave) to make that work.  Octave and txt2mat do not get along.
 
 Thanks
 ----------
