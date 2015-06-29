@@ -5,7 +5,8 @@ function [wr,b,ww]=calmultimls(xt,yt,varargin)
     if (exist('dmsm','file') == 3 && ...
         exist('chofactor','file') == 3 && ...
         exist('chosolve','file') == 3 && ...
-        exist('fastexpprob','file') == 3)
+        exist('fastexpprob','file') == 3 && ...
+        exist('fastsoftmax','file') == 3)
       havemex=true;
     else
       havemex=false;
@@ -15,13 +16,19 @@ function [wr,b,ww]=calmultimls(xt,yt,varargin)
     end
     
     [lambda,rfac,f,fbs,kernel,logisticiter,...
-     monfunc,bsfac,decay,eta,alpha,shrink]=parseArgs(k,varargin{:});
+     monfunc,bsfac,decay,eta,alpha,shrink,multiclass]=parseArgs(k,varargin{:});
+
+    if (multiclass)
+      onemshrink=(1-shrink)/k;
+    else
+      onemshrink=(1-shrink);
+    end
     
     [wr,b]=randfeats(xt,rfac,f,kernel);
     
     % Calibration
     if (fbs >= f)
-        xn=zeros(n,f+1,'single');
+        xn=zeros(n,f+1);
         xn(:,1:f)=xt*wr; xn(:,1:f)=bsxfun(@plus,xn(:,1:f),b); xn=cos(xn); % cos(0)=1
         c=xn'*xn;
         tr=sum(diag(c));
@@ -32,53 +39,45 @@ function [wr,b,ww]=calmultimls(xt,yt,varargin)
         else
           c=chol(c);
         end
-        if (issparse(yt))
-          if (havemex)
-            xnticyt=dmsm(xn',yt); % TODO: form xn' in tic-d form
-          else
-            xnticyt=single(double(xn)'*yt); % :(
-          end
+        c=single(c);
+        if (issparse(yt) && havemex)
+          xnticyt=dmsm(xn',yt); % TODO: form xn' in tic-d form
         else
-          xnticyt=xn'*yt;
+          xnticyt=xn'*yt; % :(
         end
         if (shrink < 1)
           xnticyt=(2*shrink-1)*xnticyt;
           sumxn=sum(xn,1);
-          xnticyt=bsxfun(@plus,xnticyt,(1-shrink)*sumxn');
+          xnticyt=bsxfun(@plus,xnticyt,onemshrink*sumxn');
           clear sumxn;
         end
         clear xn;
+        xnticyt=single(xnticyt);
     else
         xnticyt=zeros(f+1,size(yt,2),'single');
-        xnticxn=zeros(f+1,f+1,'single');
-        tr=0;
+        xnticxn=zeros(f+1,f+1);
         for off=1:fbs:f
             offend=min(f,off+fbs-1);
-            xntmp=xt*wr(:,off:offend);
+            xntmp=double(xt*wr(:,off:offend));
             xntmp=bsxfun(@plus,xntmp,b(off:offend));
             xntmp=cos(xntmp);
-            if (issparse(yt))
-              if (havemex)
-                xnticyt(off:offend,:)=dmsm(xntmp',yt); % TODO: form tic-d
-              else
-                xnticyt(off:offend,:)=single(double(xntmp)'*yt); % :(
-              end
+            if (issparse(yt) && havemex)
+              xnticyt(off:offend,:)=dmsm(xntmp',yt); % TODO: form tic-d
             else
-              xnticyt(off:offend,:)=xntmp'*yt;
+              xnticyt(off:offend,:)=xntmp'*yt;       % :(
             end
             sumxntmp=sum(xntmp,1);
             if (shrink < 1)
               xnticyt(off:offend,:)=(2*shrink-1)*xnticyt(off:offend,:);
               xnticyt(off:offend,:)=...
-                bsxfun(@plus,xnticyt(off:offend,:),(1-shrink)*sumxntmp');
+                bsxfun(@plus,xnticyt(off:offend,:),onemshrink*sumxntmp');
             end
             xnticxn(1+f,off:offend)=sumxntmp;
             xnticxn(off:offend,1+f)=sumxntmp;
             clear sumxntmp;
-            tr=tr+sum(sum(xntmp.*xntmp));
             for off2=off:fbs:f
               off2end=min(f,off2+fbs-1);
-              xntmp2=xt*wr(:,off2:off2end);
+              xntmp2=double(xt*wr(:,off2:off2end));
               xntmp2=bsxfun(@plus,xntmp2,b(off2:off2end));
               xntmp2=cos(xntmp2);
               xnticxn(off:offend,off2:off2end)=xntmp'*xntmp2;
@@ -94,9 +93,10 @@ function [wr,b,ww]=calmultimls(xt,yt,varargin)
           % = sum((2*shrink-1)*yt+(1-shrink)*ones(n,1)*ones(1,k),1)
           % = (2*shrink-1)*sum(yt,1)+(1-shrink)*n*ones(1,k)
           xnticyt(1+f,:)=(2*shrink-1)*xnticyt(1+f,:);
-          xnticyt(1+f,:)=xnticyt(1+f,:)+(1-shrink)*n;
+          xnticyt(1+f,:)=xnticyt(1+f,:)+onemshrink*n;
         end
         diagidx=sub2ind(size(xnticxn),1:size(xnticxn,1),1:size(xnticxn,1));
+        tr=sum(diag(xnticxn));
         xnticxn(diagidx)=xnticxn(diagidx)+(lambda*tr/(f+1));
         c=xnticxn;
         if (havemex)
@@ -105,6 +105,7 @@ function [wr,b,ww]=calmultimls(xt,yt,varargin)
           c=chol(c);
         end
         clear xnticxn;
+        c=single(c);
     end
     if (havemex)
       ww=xnticyt+0; chosolve(c,ww);
@@ -126,13 +127,23 @@ function [wr,b,ww]=calmultimls(xt,yt,varargin)
         xntmptic(1:f,:)=bsxfun(@plus,xntmptic(1:f,:),b');
         xntmptic=cos(xntmptic); % xntmptic(f+1,:)=1;
         pptic=ww'*xntmptic;
-        pptic=min(pptic,40); 
-        if (havemex)
-          fastexpprob(pptic);  
+        if (multiclass)
+          if (havemex)
+            fastsoftmax(pptic,max(pptic));      % probabilistic predictions
+          else
+            pptic=bsxfun(@minus,pptic,max(pptic));
+            pptic=exp(pptic);
+            pptic=bsxfun(@rdivide,pptic,sum(pptic));
+          end
         else
-          pptic=exp(pptic); pptic=pptic./(1+pptic);
-        end                                       % probabilistic predictions
-        g=-xntmptic*pptic'; clear xntmptic pptic; % gradient
+          pptic=min(pptic,40); 
+          if (havemex)
+            fastexpprob(pptic);                 % probabilistic predictions
+          else
+            pptic=exp(pptic); pptic=pptic./(1+pptic);
+          end                                       
+        end
+        g=-xntmptic*pptic'; clear xntmptic pptic;       % gradient
         g=g+(bs/n)*xnticyt;
         if (havemex)
           chosolve(c,g);
@@ -160,7 +171,7 @@ function [wr,b,ww]=calmultimls(xt,yt,varargin)
 end
 
 function [lambda,rfac,f,fbs,kernel,logisticiter,...
-          monfunc,bsfac,decay,eta,alpha,shrink]=parseArgs(k,varargin)
+          monfunc,bsfac,decay,eta,alpha,shrink,multiclass]=parseArgs(k,varargin)
   lambda=1.0;
   if (isfield(varargin{1},'lambda'))
       lambda=varargin{1}.lambda;
@@ -208,6 +219,10 @@ function [lambda,rfac,f,fbs,kernel,logisticiter,...
   shrink=1.0;
   if (isfield(varargin{1},'shrink'))
       shrink=varargin{1}.shrink;
+  end
+  multiclass=false;
+  if (isfield(varargin{1},'multiclass'))
+      multiclass=varargin{1}.multiclass;
   end
 end
 

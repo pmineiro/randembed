@@ -73,25 +73,31 @@ function res=traintestone(what,varargin)
     shrink=allshrink(iter);
     
     clear wr b ww;
-    if (nargin > 1 && strcmp(varargin{1},'linear'))
+    try
+      if (nargin > 1 && strcmp(varargin{1},'linear'))
        wr=0;
        b=0;
        ww=megamls(subtrainh,subtrainleft,...
                   struct('lambda',lambda,'f',f,'fbs',1000,...
-                         'focused',true,'rfac',rfac,'kernel',kern,...
+                         'rfac',rfac,'kernel',kern,...
                          'logisticiter',4*logisticiter,'eta',40*eta,...
                          'alpha',0.5+0.5*alpha,'decay',decay));
-    else
-       [wr,b,ww]=calmls(subtrainh,subtrainleft,...
-                        struct('lambda',lambda,'f',f,'fbs',1000,...
-                               'focused',true,'rfac',rfac,'kernel',kern,...
-                               'logisticiter',logisticiter,'eta',eta,...
-                               'alpha',alpha,'decay',decay,'shrink',shrink));
+      else
+       [wr,b,ww]=calmultimls(subtrainh,subtrainleft,...
+                             struct('lambda',64*lambda,'f',f,'fbs',500,...
+                                    'rfac',rfac,'kernel',kern,...
+                                    'logisticiter',logisticiter,'eta',eta,...
+                                    'alpha',alpha,'decay',decay,...
+                                    'shrink',shrink,'multiclass',true));
+      end
+    catch
+      fprintf('*');
+      continue
     end
     thres=(logisticiter==0)*0.5;
     fprintf('.');
     [~,~,~,macroF1,macroF1lb,macroF1ub]=multiF1Boot(wr,b,ww,subppos,valtrainh,valtrainleft,false);
-    [teste,testelb,testeub,microF1,microF1lb,microF1ub,error,errorlb,errorub]=multiHammingBoot(thres,wr,b,ww,valtrainh,valtrainleft,false);
+    [teste,testelb,testeub,microF1,microF1lb,microF1ub,merror,merrorlb,merrorub]=multiHammingBoot(thres,wr,b,ww,valtrainh,valtrainleft,false);
         
     if (iter == 1)
       bestham=struct('iter',iter,'loss',[teste,testelb,testeub]);
@@ -100,15 +106,15 @@ function res=traintestone(what,varargin)
       fprintf('\niter = %u, bestmicro.loss = %g',iter,bestmicro.loss(1));
       bestmacro=struct('iter',iter,'loss',[macroF1,macroF1lb,macroF1ub]);
       fprintf('\niter = %u, bestmacro.loss = %g',iter,bestmacro.loss(1));
-      besterror=struct('iter',iter,'loss',[error,errorlb,errorub]);
+      besterror=struct('iter',iter,'loss',[merror,merrorlb,merrorub]);
       fprintf('\niter = %u, besterror.loss = %g',iter,besterror.loss(1));
     else
       if (teste < bestham.loss(1))
         bestham=struct('iter',iter,'loss',[teste,testelb,testeub]);
         fprintf('\niter = %u, bestham.loss = %g',iter,bestham.loss(1));
       end
-      if (error < besterror.loss(1))
-        besterror=struct('iter',iter,'loss',[error,errorlb,errorub]);
+      if (merror < besterror.loss(1))
+        besterror=struct('iter',iter,'loss',[merror,merrorlb,merrorub]);
         fprintf('\niter = %u, besterror.loss = %g',iter,besterror.loss(1));
       end
       if (microF1 > bestmicro.loss(1))
@@ -143,25 +149,26 @@ function res=traintestone(what,varargin)
        b=0;
        ww=megamls(trainh,trainleft,...
                   struct('lambda',lambda,'f',f,'fbs',1000,...
-                         'focused',true,'rfac',rfac,'kernel',kern,...
+                         'rfac',rfac,'kernel',kern,...
                          'logisticiter',4*logisticiter,'eta',40*eta,...
                          'alpha',0.5+0.5*alpha,'decay',decay));
     else
-      [wr,b,ww]=calmls(trainh,trainleft,...
-                       struct('lambda',lambda,'f',f,'fbs',1000,...
-                              'focused',true,'rfac',rfac,'kernel',kern,...
-                              'logisticiter',logisticiter,'eta',eta,...
-                              'alpha',alpha,'decay',decay,'shrink',shrink));
+       [wr,b,ww]=calmultimls(trainh,trainleft,...
+                             struct('lambda',64*lambda,'f',f,'fbs',500,...
+                                    'rfac',rfac,'kernel',kern,...
+                                    'logisticiter',logisticiter,'eta',eta,...
+                                    'alpha',alpha,'decay',decay,...
+                                    'shrink',shrink,'multiclass',true));
     end
     thres=(logisticiter==0)*0.5;
     fprintf('iter=%u f=%g rfac=%g lambda=%g logisticiter=%u eta=%g alpha=%g decay=%g kern=%s shrink=%g\n',...
             iter,f,rfac,lambda,logisticiter,eta,alpha,decay,kern,shrink);
     if (which == 1 || which == 2 || which == 4)
-      [teste,testelb,testeub,microF1,microF1lb,microF1ub,error,errorlb,errorub]=multiHammingBoot(thres,wr,b,ww,testh,testleft,true);
+      [teste,testelb,testeub,microF1,microF1lb,microF1ub,merror,merrorlb,merrorub]=multiHammingBoot(thres,wr,b,ww,testh,testleft,true);
       if (which == 1)
         res.calmls_embed_test_hamming=[testelb,teste,testeub];
       elseif (which == 4)
-        res.calmls_embed_test_error=[errorlb,error,errorub];
+        res.calmls_embed_test_error=[merrorlb,merror,merrorub];
       else
         res.calmls_embed_test_microF1=[microF1lb,microF1,microF1ub];
       end
@@ -243,7 +250,7 @@ function [microF1,macroF1]=F1metric(truepos,falsepos,falseneg)
   microF1=2*(prec.*rec)./(prec+rec+1e-12);
 end
 
-function [loss,cilb,ciub,microloss,microlb,microub,error,errorlb,errorub]=multiHammingBoot(th,wr,b,ww,testh,testy,doprint)
+function [loss,cilb,ciub,microloss,microlb,microub,merror,merrorlb,merrorub]=multiHammingBoot(th,wr,b,ww,testh,testy,doprint)
   [m,~]=size(testh);
   imp=poissrnd(1,m,16);
   [testloss,testtruepos,testfalsepos,testfalseneg,multierror]=...
@@ -255,9 +262,9 @@ function [loss,cilb,ciub,microloss,microlb,microub,error,errorlb,errorub]=multiH
   ciub=testloss(ind(15));
   
   [~,ind]=sort(multierror);
-  error=mean(multierror(ind(8:9)));
-  errorlb=multierror(ind(2));
-  errorub=multierror(ind(15));
+  merror=mean(multierror(ind(8:9)));
+  merrorlb=multierror(ind(2));
+  merrorub=multierror(ind(15));
     
   [microF1,~]=F1metric(testtruepos,testfalsepos,testfalseneg);
   [~,ind]=sort(microF1);
@@ -267,11 +274,17 @@ function [loss,cilb,ciub,microloss,microlb,microub,error,errorlb,errorub]=multiH
  
   if (doprint)
     fprintf('per-ex inference: (hamming) [%g,%g,%g] (micro) [%g,%g,%g] (multiclass) [%g,%g,%g]\n',...
-            cilb,loss,ciub,microlb,microloss,microub,errorlb,error,errorub);
+            cilb,loss,ciub,microlb,microloss,microub,merrorlb,merror,merrorub);
   end
 end
 
 function [microF1,macroF1]=F1Impl(wr,b,ww,trainh,trainy,ppos,imp)
+  persistent havemex;
+
+  if (isempty(havemex))
+    havemex = (exist('fastsoftmax', 'file') == 3);
+  end
+
   [~,f]=size(wr);
   [n,k]=size(trainy);
   kbs=min(k,ceil(1e+9/n));
@@ -288,7 +301,13 @@ function [microF1,macroF1]=F1Impl(wr,b,ww,trainh,trainy,ppos,imp)
       Z=cos(bsxfun(@plus,trainh*wr,b))*ww(1:f,off:offend);
       Z=bsxfun(@plus,Z,ww(f+1,off:offend));
     end
-    fastsoftmax(Z,max(Z));
+    if (havemex)
+      fastsoftmax(Z,max(Z));
+    else
+      Z=bsxfun(@minus,Z,max(Z));
+      Z=exp(Z);
+      Z=bsxfun(@rdivide,Z,sum(Z));
+    end
     [allsp,allind]=sort(Z,'descend');
     r=bsxfun(@plus,linspace(1,n,n)'*ones(1,offend-off+1),n*ppos(off:offend));
     fscores=bsxfun(@rdivide,cumsum(allsp),r);

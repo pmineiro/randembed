@@ -2,12 +2,19 @@ matlab
 ==========
 This directory contains the matlab/octave code.
 
+Files:
+
+ * [rembed.m](rembed.m): randomized embedding code.  Given features X and labels Y, computes the top right singular vectors of (U<sub>X</sub><sup>T</sup> Y), where U<sub>X</sub> are the left singular vectors of X.  
+ * [calmultimls.m](calmultimls.m): (primal approximation to) kernel multiclass and multilabel fitting routine.  uses preconditioned SGD.
+
+To see examples of these two routines composed to solve problems, look at the multilabel experiments in [../mulan](../mulan) and the multiclass experiment in [../aloi](../aloi).
+
 compiling the mex
 -----------------
 If you are using matlab, you should compile the mex to make everything go faster.  Hopefully you can just type
-> make NUM_THREADS=6
+> make NUM\_THREADS=6
  
-and all the mex will be compiled for you.  Adjust NUM_THREADS based upon how much parallelism is appropriate for your setup.  (Sorry, it's not cool enough to auto-detect this).
+and all the mex will be compiled for you.  Adjust NUM\_THREADS based upon how much parallelism is appropriate for your setup.  (Sorry, it's not cool enough to auto-detect this).
 
 If you lack a reasonable shell environment, you can execute the mex commands directly from matlab, e.g., under Windows:
 
