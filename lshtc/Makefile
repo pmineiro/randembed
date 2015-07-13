@@ -1,6 +1,7 @@
 .SECONDARY:
 
 all: dict
+	@echo "you are ready: now run traintestlshtc.m from matlab" 1>&2
 
 train-remapped.zip:
 	@echo 'wget http://www.kaggle.com/c/lshtc/download/$@' 1>&2
@@ -8,7 +9,7 @@ train-remapped.zip:
 	@exit 1
 
 dict: train-remapped.zip train2mat
-	gunzip -dc $< | ./train2mat 3>left 4>right 5>dict
+	gunzip -dc $< | perl ./train2mat 3>left 4>right 5>dict
 
 oissrnd.m:
 	wget -q http://www.mathworks.com/matlabcentral/fileexchange/1261-poissrnd/content/oissrnd.m

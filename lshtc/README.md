@@ -8,7 +8,7 @@ If you lack a poissrnd function, you can try
 > make poissrnd.m
 
 Otherwise, at a matlab prompt:
-> &gt;&gt; traintestlshtc
+> &gt;&gt; traintestlshtc   
 > ... (lots of number crunching) ...   
 
 will eventually report test precision-at-1 for each epoch. It takes a while so you should go camping for the weekend.  (Building the embedding doesn't take much longer than lunch, but fitting the logistic is slow.)
