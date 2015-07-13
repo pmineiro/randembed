@@ -1,6 +1,10 @@
-function retval=traintestlshtclowrank()
+function retval=traintestlshtc()
   addpath('../matlab/');
   prefix='./';
+  
+  if exist('poissrnd') == 0
+    error('*** you are missing poissrnd: try ''make poissrnd.m'' ***')
+  end
 
   randn('seed',8675309);
   rand('seed',90210);
