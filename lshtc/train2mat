@@ -1,0 +1,59 @@
+#! /usr/bin/env perl
+
+use warnings;
+use strict;
+
+# Data
+# 314523, 165538, 76255, 335416, 416827 1:1 2:1 3:1 4:1 5:1 6:1 7:1 8:1 9:1 10:1 11:1 12:2 13:1 14:2 15:1 16:1 17:1 18:1 19:1 20:1 21:1 22:1 23:1 24:5 25:1 26:1 27:1 28:1 29:1 30:3 31:1 32:2 33:1 34:1 35:1 36:3 37:1 38:1 39:1 40:1 41:3 42:1 43:7 44:1 45:1 46:1 47:1 48:1 49:1 50:1 51:2 52:1 53:1 54:1 55:1 56:1 57:3 58:4 59:1 60:2 61:3 62:1 63:1 64:1 65:1 66:1 67:2 68:1 69:1 70:1 71:1 72:1 73:1 74:1 75:2 76:2 77:1 78:1 79:1 80:1 81:1
+
+# zcat train-remapped.zip | ./train2mat 3>left 4>right 5>dict
+
+# NB: use of dict is not crazy, categories are not sequentially numbered (?)
+sub dict_lookup($$)
+{
+  my ($term, $dict) = @_;
+
+  $term = lc $term;
+
+  do { my $nd = scalar keys %$dict; 
+       $dict->{$term} = ++$nd; } 
+  unless exists $dict->{$term};
+
+  return $dict->{$term};
+}
+
+open (LEFT, '>&=3');
+open (RIGHT, '>&=4');
+open (DICT, '>&=5');
+
+my $n = 1;
+my %dict;
+
+while (defined ($_ = <>))
+  {
+    next unless m%:%;
+    s%, %,%g;
+    chomp;
+    my ($labelstring, @features) = split /\s+/, $_;
+    my @labels = map { dict_lookup ($_, \%dict) } split /,/, $labelstring;
+
+    foreach my $label (@labels)
+      {
+        print LEFT "$n $label 1\n";
+      }
+
+    foreach my $f (@features)
+      {
+        my ($id, $val) = split /:/, $f;
+        print RIGHT "$n $id $val\n";
+      }
+
+    ++$n;
+  }
+
+my %invdict = map { $dict{$_} => $_ } keys %dict;
+
+foreach (1 .. scalar keys %invdict)
+{
+  print DICT "$_\t$invdict{$_}\n";
+}
