@@ -105,7 +105,7 @@ function res=traintestone(what)
     [~,~,~,macroF1,macroF1lb,macroF1ub]=multiF1Boot(wr,b,ww,subppos,valtrainh,valtrainleft,false);
     [teste,testelb,testeub,microF1,microF1lb,microF1ub]=multiHammingBoot(thres,wr,b,ww,valtrainh,valtrainleft,false);
         
-    if (iter == 1)
+    if (~exist('bestham','var'))
       bestham=struct('iter',iter,'loss',[teste,testelb,testeub]);
       fprintf('\niter = %u, bestham.loss = %g',iter,bestham.loss(1));
       bestmicro=struct('iter',iter,'loss',[microF1,microF1lb,microF1ub]);
