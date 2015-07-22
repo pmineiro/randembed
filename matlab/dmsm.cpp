@@ -5,6 +5,14 @@
 #include <thread>
 #include <emmintrin.h>
 
+/* % dense matrix times sparse matrix
+ * >> A=sprandn(100,100,0.1); W=ones(1,100); B=randn(5,100); Z=B*diag(W)*A; ZZ=dmsm(B,A,W); disp(norm(Z-ZZ))
+ *      0
+ * % dense matrix times scaled sparse matrix
+ * >> A=sprandn(100,100,0.1); W=randn(1,100); B=randn(5,100); Z=B*A*diag(W); ZZ=dmsm(B,A,W); disp(norm(Z-ZZ))
+      9.1859e-15
+ */
+
 /*
  * compilation, at matlab prompt: (adjust NUM_THREADS as appropriate)
  * 
@@ -26,18 +34,19 @@
 
 // X = D*S => X' = S'*D'
 
-template<typename scalar>
 static void
 sparsetic_times_densetic (int nrhs, const mxArray* prhs[], mxArray* plhs[], size_t start, size_t end)
 {
   mwIndex* ir = mxGetIr(SPARSE_MATRIX_PARAMETER_IN);  /* Row indexing      */
   mwIndex* jc = mxGetJc(SPARSE_MATRIX_PARAMETER_IN);  /* Column count      */
   double* s  = mxGetPr(SPARSE_MATRIX_PARAMETER_IN);   /* Non-zero elements */
-  scalar* Btic = (scalar*) mxGetData(DENSE_MATRIX_PARAMETER_IN);
+  void* Btic = mxGetData(DENSE_MATRIX_PARAMETER_IN);
   mwSize Bcol = mxGetM(DENSE_MATRIX_PARAMETER_IN);
-  scalar* Xtic = (scalar*) mxGetData(plhs[0]);
+  void* Xtic = mxGetData(plhs[0]);
   mwSize Xcol = mxGetM(plhs[0]);
 
+  bool singlePrec = mxIsSingle(DENSE_MATRIX_PARAMETER_IN);
+  
   size_t off = 0;
 
   if (nrhs > 3) {
@@ -45,30 +54,63 @@ sparsetic_times_densetic (int nrhs, const mxArray* prhs[], mxArray* plhs[], size
   }
 
   if (nrhs == 2) {
-    for (size_t i=start; i<end; ++i) {            /* Loop through rows of A (and X) */
-      mwIndex stop = jc[off+i+1];
-      for (mwIndex k=jc[off+i]; k<stop; ++k) {    /* Loop through non-zeros in ith row of A */
-        double sk = s[k];
-        scalar* Bticrow = Btic + ir[k] * Bcol;
-        scalar* Xticrow = Xtic + i * Xcol;
-        for (mwSize j=0; j<Xcol; ++j) {
-          Xticrow[j] += sk * Bticrow[j];
+    if (singlePrec) {
+      for (size_t i=start; i<end; ++i) {            /* Loop through rows of A (and X) */
+        mwIndex stop = jc[off+i+1];
+        for (mwIndex k=jc[off+i]; k<stop; ++k) {    /* Loop through non-zeros in ith row of A */
+          double sk = s[k];
+          float* Bticrow = ((float*)Btic) + ir[k] * Bcol;
+          float* Xticrow = ((float*)Xtic) + i * Xcol;
+          for (mwSize j=0; j<Xcol; ++j) {
+            Xticrow[j] += sk * Bticrow[j];
+          }
+        }
+      }
+    }
+    else {
+      for (size_t i=start; i<end; ++i) {            /* Loop through rows of A (and X) */
+        mwIndex stop = jc[off+i+1];
+        for (mwIndex k=jc[off+i]; k<stop; ++k) {    /* Loop through non-zeros in ith row of A */
+          double sk = s[k];
+          double* Bticrow = ((double*)Btic) + ir[k] * Bcol;
+          double* Xticrow = ((double*)Xtic) + i * Xcol;
+          for (mwSize j=0; j<Xcol; ++j) {
+            Xticrow[j] += sk * Bticrow[j];
+          }
         }
       }
     }
   }
   else {
-    double* w = mxGetPr(DIAG_VECTOR_PARAMETER_IN);
+    bool diagsinglePrec = mxIsSingle(DIAG_VECTOR_PARAMETER_IN);
+    float* wf = (float*) mxGetPr(DIAG_VECTOR_PARAMETER_IN);
+    double* wd = (double*) mxGetPr(DIAG_VECTOR_PARAMETER_IN);
 
-    for (size_t i=start; i<end; ++i) {            /* Loop through rows of A (and X) */
-      double wi = w[off+i];
-      mwIndex stop = jc[off+i+1];
-      for (mwIndex k=jc[off+i]; k<stop; ++k) {    /* Loop through non-zeros in ith row of A */
-        double sk = wi * s[k];
-        scalar* Bticrow = Btic + ir[k] * Bcol;
-        scalar* Xticrow = Xtic + i * Xcol;
-        for (mwSize j=0; j<Xcol; ++j) {
-          Xticrow[j] += sk * Bticrow[j];
+    if (singlePrec) {
+      for (size_t i=start; i<end; ++i) {            /* Loop through rows of A (and X) */
+        double wi = diagsinglePrec ? wf[off+i] : wd[off+i];
+        mwIndex stop = jc[off+i+1];
+        for (mwIndex k=jc[off+i]; k<stop; ++k) {    /* Loop through non-zeros in ith row of A */
+          double sk = wi * s[k];
+          float* Bticrow = ((float*)Btic) + ir[k] * Bcol;
+          float* Xticrow = ((float*)Xtic) + i * Xcol;
+          for (mwSize j=0; j<Xcol; ++j) {
+            Xticrow[j] += sk * Bticrow[j];
+          }
+        }
+      }
+    }
+    else {
+      for (size_t i=start; i<end; ++i) {            /* Loop through rows of A (and X) */
+        double wi = diagsinglePrec ? wf[off+i] : wd[off+i];
+        mwIndex stop = jc[off+i+1];
+        for (mwIndex k=jc[off+i]; k<stop; ++k) {    /* Loop through non-zeros in ith row of A */
+          double sk = wi * s[k];
+          double* Bticrow = ((double*)Btic) + ir[k] * Bcol;
+          double* Xticrow = ((double*)Xtic) + i * Xcol;
+          for (mwSize j=0; j<Xcol; ++j) {
+            Xticrow[j] += sk * Bticrow[j];
+          }
         }
       }
     }
@@ -106,7 +148,13 @@ void mexFunction( int nlhs, mxArray *plhs[],
         mexErrMsgTxt("Scale must be dense. Fail.");
         return;
       }
-
+      
+      if (! mxIsSingle(DIAG_VECTOR_PARAMETER_IN) &&
+          ! mxIsDouble(DIAG_VECTOR_PARAMETER_IN)) {
+        mexErrMsgTxt("Scale must be double or single. Fail.");
+        return;
+      }
+      
       if (mxGetM(DIAG_VECTOR_PARAMETER_IN) != 1 ||
           mxGetN(DIAG_VECTOR_PARAMETER_IN) != mxGetN(SPARSE_MATRIX_PARAMETER_IN)) {
         mexErrMsgTxt("Scale has incompatible shape. Fail.");
@@ -137,9 +185,6 @@ void mexFunction( int nlhs, mxArray *plhs[],
       return;
   }
 
-  bool singlePrec = mxIsSingle(DENSE_MATRIX_PARAMETER_IN);
-
-  void* Btic = mxGetData(DENSE_MATRIX_PARAMETER_IN);
   size_t Bcol = mxGetM(DENSE_MATRIX_PARAMETER_IN);
 
   size_t Arow = mxGetN(SPARSE_MATRIX_PARAMETER_IN);
@@ -170,37 +215,23 @@ void mexFunction( int nlhs, mxArray *plhs[],
       default:
         break;
     }
-
+  
+  bool singlePrec = mxIsSingle(DENSE_MATRIX_PARAMETER_IN);
   plhs[0] = mxCreateNumericMatrix(Bcol, 1+end-start, (singlePrec) ? mxSINGLE_CLASS : mxDOUBLE_CLASS, mxREAL);
 
   std::thread t[NUM_THREADS];
   size_t quot = (1+end-start)/NUM_THREADS;
 
   for (size_t i = 0; i + 1 < NUM_THREADS; ++i) {
-    if (singlePrec) {
-      t[i] = std::thread(sparsetic_times_densetic<float>,
-                         nrhs,
-                         prhs,
-                         plhs,
-                         i * quot,
-                         (i + 1) * quot);
-    }
-    else {
-      t[i] = std::thread(sparsetic_times_densetic<double>,
-                         nrhs,
-                         prhs,
-                         plhs,
-                         i * quot,
-                         (i + 1) * quot);
-    }
+    t[i] = std::thread(sparsetic_times_densetic,
+                       nrhs,
+                       prhs,
+                       plhs,
+                       i * quot,
+                       (i + 1) * quot);
   }
 
-  if (singlePrec) {
-    sparsetic_times_densetic<float> (nrhs, prhs, plhs, (NUM_THREADS - 1) * quot, 1 + end - start);
-  }
-  else {
-    sparsetic_times_densetic<double> (nrhs, prhs, plhs, (NUM_THREADS - 1) * quot, 1 + end - start);
-  }
+  sparsetic_times_densetic (nrhs, prhs, plhs, (NUM_THREADS - 1) * quot, 1 + end - start);
 
   for (int i = 0; i + 1 < NUM_THREADS; ++i) {
     t[i].join ();
