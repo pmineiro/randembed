@@ -11,6 +11,9 @@
  * % dense matrix times scaled sparse matrix
  * >> A=sprandn(100,100,0.1); W=randn(1,100); B=randn(5,100); Z=B*A*diag(W); ZZ=dmsm(B,A,W); disp(norm(Z-ZZ))
       9.1859e-15
+ * % dense matrix times scaled sparse matrix over column range
+ * >> A=sprandn(100,100,0.1); W=randn(1,100); B=randn(5,100); Z=B*A(:,3:51)*diag(W(3:51)); ZZ=dmsm(B,A,W,3,51); disp(norm(Z-ZZ))
+      5.3934e-15
  */
 
 /*

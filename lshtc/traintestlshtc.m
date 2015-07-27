@@ -1,4 +1,4 @@
-function retval=traintestlshtc()
+function res=traintestlshtc()
   addpath('../matlab/');
   prefix='./';
   
