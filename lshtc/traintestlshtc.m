@@ -78,7 +78,7 @@ function res=traintestlshtc()
                                'logisticiter',20,'focused',true,...
                                'monfunc',@(wr,b,ww,th) multiPrecAt1(wr,b,ww,testh,testleft,true,trainstart)));
   toc(trainstart)
-  teste=multiPrecAt1(wr,b,ww,testh,testleft,false,trainstart);
+  [~,teste,~]=multiPrecAt1(wr,b,ww,testh,testleft,false,trainstart);
   res.calmultimls_embed_test_error=teste;
 
   toc(start)
