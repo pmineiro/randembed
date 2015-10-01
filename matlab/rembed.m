@@ -409,7 +409,7 @@ function Y = cheesypcg(Afunc,preAfunc,Y,b,iter,verbose)
   r=b-Afunc(Y); clear b;
   z=preAfunc(r);
   p=z;
-  rho=diag(r*z'); clear z;
+  rho=dot(r,z,2); clear z;
   initsumrr=sum(sum(r.*r));
   minY=Y;
   argminY=initsumrr;
@@ -420,7 +420,7 @@ function Y = cheesypcg(Afunc,preAfunc,Y,b,iter,verbose)
 
   for ii=1:iter
     Ap=Afunc(p);
-    alpha=rho./diag(max(p*Ap',eps));
+    alpha=rho./max(dot(p,Ap,2),eps);
     Y=Y+bsxfun(@times,p,alpha);
     deltar=bsxfun(@times,Ap,alpha); clear Ap;
     r=r-deltar;
@@ -441,7 +441,7 @@ function Y = cheesypcg(Afunc,preAfunc,Y,b,iter,verbose)
 
     z=preAfunc(r);
     rho1=-(rho<0).*max(-rho,eps)+(rho>=0).*max(rho,eps);
-    rho=-diag(deltar*z');
+    rho=-dot(deltar,z,2);
     beta=rho./rho1;
     p=z+bsxfun(@times,p,beta); clear z;
   end
